@@ -3,6 +3,9 @@ const readline = require('readline');
 const usrRl = readline.createInterface(process.stdin, process.stdout);
 const appId = new require('uuid/v1')();
 const events = require('events');
+const chalk = require('chalk');
+const log = console.log;
+
 
 // RegEx pra detectar o padrão de comandos: /comando arg1 arg2 ...
 const cmdPattern = /^(?:\/|\?)\w+(?:(?:\s.*)|(?:\s*))$/;
@@ -33,7 +36,7 @@ const Cli = function (rStream, wStream) {
 // Função para fazer o parse dos comandos
 Cli.prototype.parse = function (line) {
     if (line.trim() == '') {
-        console.log('Nada foi enviado.');
+        log(chalk.red('Nada foi enviado.'));
     } else if (cmdPattern.test(line)) {
         var cmdParts = line.replace(cmdArgsPattern, ' ').split(' ');
         var cmd = this.commands[cmdParts[0].substring(1)];
@@ -41,9 +44,9 @@ Cli.prototype.parse = function (line) {
         if (cmd && line.startsWith('/'))
             cmd.run(this.client, cmdParts.slice(1));
         else if (cmd && line.startsWith('?'))
-            console.log(cmd.help);
+            log(chalk.purple(cmd.help));
         else
-            console.log('Comando não encontrado.');
+            log(chalk.red('Comando não encontrado.'));
     } else if (pvtPattern.test(line)) {
         var spaceIndex = line.indexOf(' ');
         var target = line.slice(1, spaceIndex);
@@ -54,7 +57,7 @@ Cli.prototype.parse = function (line) {
             texto: msg
         });
     } else {
-        console.log(`Você: ${line}`);
+        log(chalk.green.bgWhite(`Você: ${line}`));
         this.client.send(clientMessageType.mensagem, {
             remetente: this.client.user.name,
             destinatario: 'todos',
@@ -72,10 +75,10 @@ Cli.prototype.commands = {
         run: function (client, args) {
             client.users.sort();
             if (args.length == 0) {
-                console.log(`Usuários online:\n\n${client.users.join('\n')}\n\n\n`);
+                log(chalk.green((`Usuários online:\n\n${client.users.join('\n')}\n\n\n`)));
             } else if (args.length > 0) {
                 args[0].toLowerCase();
-                console.log(`Usuários online:\n\n${client.users.filter(u => u.toLowerCase().includes(args[0])).join('\n')}\n\n\n`);
+                log(chalk.green((`Usuários online:\n\n${client.users.filter(u => u.toLowerCase().includes(args[0])).join('\n')}\n\n\n`)));
             }
         }
     },
@@ -145,7 +148,7 @@ function content(obj) {
 
 // Inicia a linha de comando
 const cli = new Cli(process.stdin, process.stdout);
-console.log('Bem vindo ao chat!');
+log(chalk.bgGreen('Bem vindo ao chat!'));
 
 cli.rl.question('Como deseja ser conhecido?', (line) => {
     var user = {
@@ -164,7 +167,7 @@ cli.rl.question('Como deseja ser conhecido?', (line) => {
             // Redesign: em vez de response generico cada case pode virar um evento
             switch (res.tipo) {
                 case serverMessageType.resultado:
-                    console.log(res.conteudo.mensagem);
+                    log(chalk.blue(res.conteudo.mensagem));
                     break;
                 case serverMessageType.listagem:
                     // Considerar mover para dentro do client
@@ -184,7 +187,7 @@ cli.rl.question('Como deseja ser conhecido?', (line) => {
                     if (res.conteudo.destinatario != 'todos')
                         msg = '(PVT) ' + msg;
 
-                    console.log(msg);
+                    log(chalk.green.gbWhite(msg));
                     break;
             }
         });
